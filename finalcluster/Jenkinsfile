@@ -1,4 +1,4 @@
-@Library('KafkaSharedLib') _  // Link your shared library
+@Library('KafkaSharedLib') _  // Link to your shared library
 
 pipeline {
     agent any
@@ -13,21 +13,55 @@ pipeline {
     }
 
     stages {
-        stage('Pipeline') {
+        stage('Checkout Code') {
             steps {
                 script {
-                    def kafka = new org.cloudninja.kafka.template.KafkaDeployment(steps)
-
-                    // ===== Git Checkout =====
+                    def kafka = new org.cloudninja.kafka.template.KafkaDeployment(this)
                     kafka.checkoutCode(GIT_REPO, GIT_BRANCH)
+                }
+            }
+        }
 
-                    // ===== Ansible CI Checks =====
+        stage('Ansible Lint') {
+            steps {
+                script {
+                    def kafka = new org.cloudninja.kafka.template.KafkaDeployment(this)
                     kafka.ansibleLint(PLAYBOOK)
-                    kafka.ansibleSyntaxCheck(INVENTORY, PLAYBOOK)
-                    kafka.ansibleDryRun(INVENTORY, PLAYBOOK, ANSIBLE_USER, ANSIBLE_KEY)
+                }
+            }
+        }
 
-                    // ===== Deploy =====
+        stage('Ansible Syntax Check') {
+            steps {
+                script {
+                    def kafka = new org.cloudninja.kafka.template.KafkaDeployment(this)
+                    kafka.ansibleSyntaxCheck(INVENTORY, PLAYBOOK)
+                }
+            }
+        }
+
+        stage('Ansible Dry Run') {
+            steps {
+                script {
+                    def kafka = new org.cloudninja.kafka.template.KafkaDeployment(this)
+                    kafka.ansibleDryRun(INVENTORY, PLAYBOOK, ANSIBLE_USER, ANSIBLE_KEY)
+                }
+            }
+        }
+
+        stage('Deploy Zookeeper') {
+            steps {
+                script {
+                    def kafka = new org.cloudninja.kafka.template.KafkaDeployment(this)
                     kafka.deployZookeeper(INVENTORY, PLAYBOOK, ANSIBLE_USER, ANSIBLE_KEY)
+                }
+            }
+        }
+
+        stage('Deploy Kafka') {
+            steps {
+                script {
+                    def kafka = new org.cloudninja.kafka.template.KafkaDeployment(this)
                     kafka.deployKafka(INVENTORY, PLAYBOOK, ANSIBLE_USER, ANSIBLE_KEY)
                 }
             }
@@ -36,13 +70,13 @@ pipeline {
 
     post {
         success {
-            echo "Kafka/Zookeeper deployment completed successfully!"
+            echo "✅ Kafka/Zookeeper deployment completed successfully!"
         }
         failure {
-            echo "Pipeline failed. Check logs for details."
+            echo "❌ Pipeline failed. Check logs for details."
         }
         always {
-            echo "Cleaning workspace..."
+            echo "🧹 Cleaning workspace..."
             cleanWs()
         }
     }
