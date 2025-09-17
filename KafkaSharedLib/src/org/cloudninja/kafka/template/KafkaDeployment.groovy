@@ -7,7 +7,7 @@ class KafkaDeployment implements Serializable {
         this.steps = steps
     }
 
-    // ===== Git Checkout =====
+    
     def checkoutCode(String repo, String branch) {
         steps.echo "Checking out Git repository..."
         steps.checkout([$class: 'GitSCM',
@@ -16,7 +16,7 @@ class KafkaDeployment implements Serializable {
         ])
     }
 
-    // ===== Ansible Lint =====
+    
     def ansibleLint(String playbook) {
         steps.echo "Running ansible-lint on playbook..."
         steps.sh """
@@ -25,7 +25,7 @@ class KafkaDeployment implements Serializable {
         """
     }
 
-    // ===== Ansible Syntax Check =====
+    
     def ansibleSyntaxCheck(String inventory, String playbook) {
         steps.echo "Checking Ansible playbook syntax..."
         steps.sh """
@@ -34,7 +34,7 @@ class KafkaDeployment implements Serializable {
         """
     }
 
-    // ===== Ansible Dry Run =====
+    
     def ansibleDryRun(String inventory, String playbook, String user, String key) {
         steps.echo "Performing dry run (check mode) on playbook..."
         steps.sh """
@@ -43,7 +43,7 @@ class KafkaDeployment implements Serializable {
         """
     }
 
-    // ===== Deploy Zookeeper =====
+    
     def deployZookeeper(String inventory, String playbook, String user, String key) {
         steps.echo "Deploying Zookeeper cluster..."
         steps.sh """
@@ -52,7 +52,7 @@ class KafkaDeployment implements Serializable {
         """
     }
 
-    // ===== Deploy Kafka =====
+    
     def deployKafka(String inventory, String playbook, String user, String key) {
         steps.echo "Deploying Kafka cluster..."
         steps.sh """
