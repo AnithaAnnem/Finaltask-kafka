@@ -1,8 +1,9 @@
-@Library('KafkaSharedLib') _  
+@Library('KafkaSharedLib') _  // Link to your shared library
 
 pipeline {
     agent any
 
+    // Only environment parameters — fully configurable
     parameters {
         string(name: 'GIT_REPO', defaultValue: 'https://github.com/AnithaAnnem/Finaltask-kafka.git', description: 'Git repository URL')
         string(name: 'GIT_BRANCH', defaultValue: 'main', description: 'Git branch to checkout')
@@ -10,7 +11,6 @@ pipeline {
         string(name: 'PLAYBOOK', defaultValue: 'finalcluster/site.yml', description: 'Ansible playbook')
         string(name: 'ANSIBLE_USER', defaultValue: 'ubuntu', description: 'SSH user for Ansible')
         string(name: 'ANSIBLE_KEY', defaultValue: '/var/lib/jenkins/.ssh/MYKAFKA.pem', description: 'SSH private key path for Ansible')
-        choice(name: 'DEPLOY_TAG', choices: ['all', 'zookeeper', 'kafka'], description: 'Deploy specific components by tag')
     }
 
     stages {
@@ -54,18 +54,18 @@ pipeline {
             }
         }
 
-        stage('Deploy Components') {
+        stage('Deploy Zookeeper') {
             steps {
                 script {
-                    if (params.DEPLOY_TAG == 'zookeeper') {
-                        kafka.deployZookeeper(params.INVENTORY, params.PLAYBOOK, params.ANSIBLE_USER, params.ANSIBLE_KEY)
-                    } else if (params.DEPLOY_TAG == 'kafka') {
-                        kafka.deployKafka(params.INVENTORY, params.PLAYBOOK, params.ANSIBLE_USER, params.ANSIBLE_KEY)
-                    } else {
-                        // Deploy both
-                        kafka.deployZookeeper(params.INVENTORY, params.PLAYBOOK, params.ANSIBLE_USER, params.ANSIBLE_KEY)
-                        kafka.deployKafka(params.INVENTORY, params.PLAYBOOK, params.ANSIBLE_USER, params.ANSIBLE_KEY)
-                    }
+                    kafka.deployZookeeper(params.INVENTORY, params.PLAYBOOK, params.ANSIBLE_USER, params.ANSIBLE_KEY)
+                }
+            }
+        }
+
+        stage('Deploy Kafka') {
+            steps {
+                script {
+                    kafka.deployKafka(params.INVENTORY, params.PLAYBOOK, params.ANSIBLE_USER, params.ANSIBLE_KEY)
                 }
             }
         }
