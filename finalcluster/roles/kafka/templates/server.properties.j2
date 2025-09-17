@@ -1,0 +1,24 @@
+# Broker ID
+broker.id={{ kafka_broker_id }}
+
+# Kafka log directory
+log.dirs={{ kafka_data_dir }}/logs
+
+# Zookeeper connect string (private IPs)
+zookeeper.connect={% for host in groups['zk'] %}{{ hostvars[host].ansible_default_ipv4.address }}:2181{% if not loop.last %},{% endif %}{% endfor %}
+
+# Listeners
+listeners=PLAINTEXT://0.0.0.0:{{ kafka_port }}
+advertised.listeners=PLAINTEXT://{{ ansible_default_ipv4.address }}:{{ kafka_port }}
+
+# Threads and network
+num.network.threads=3
+num.io.threads=8
+socket.send.buffer.bytes=102400
+socket.receive.buffer.bytes=102400
+socket.request.max.bytes=104857600
+
+# Log retention and size
+log.retention.hours={{ kafka_log_retention_hours }}
+log.segment.bytes={{ kafka_log_segment_bytes }}
+log.retention.check.interval.ms={{ kafka_log_check_interval_ms }}

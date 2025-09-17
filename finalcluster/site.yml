@@ -1,0 +1,14 @@
+---
+- name: Setup Zookeeper cluster
+  hosts: zk
+  become: true
+  roles:
+    - java
+    - zookeeper
+
+- name: Setup Kafka cluster
+  hosts: kafka
+  become: true
+  roles:
+    - java
+    - kafka

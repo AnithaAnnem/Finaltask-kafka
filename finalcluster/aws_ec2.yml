@@ -1,0 +1,23 @@
+plugin: amazon.aws.aws_ec2
+regions:
+  - us-east-1
+filters:
+  instance-state-name: running
+
+# Create groups from tags
+keyed_groups:
+  - key: tags.Name
+    prefix: ""
+    separator: ""
+  - key: tags.Role
+    prefix: ""
+    separator: ""
+
+# Use private IPs for Ansible hostnames
+hostnames:
+  - private-ip-address
+
+# Define logical groups for cluster roles
+groups:
+  zk: "'zk-' in tags.Name"
+  kafka: "'kafka-n' in tags.Name"

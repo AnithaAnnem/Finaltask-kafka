@@ -1,0 +1,21 @@
+[Unit]
+Description=Apache Kafka Service
+After=network.target
+
+[Service]
+Type=simple
+User={{ kafka_user }}
+Group={{ kafka_group }}
+PIDFile={{ kafka_pid_dir }}/kafka.pid
+
+Environment="JAVA_HOME={{ kafka_java_home }}"
+
+ExecStart={{ kafka_install_dir }}/{{ kafka_package }}/bin/kafka-server-start.sh {{ kafka_install_dir }}/{{ kafka_package }}/config/server.properties
+ExecStop={{ kafka_install_dir }}/{{ kafka_package }}/bin/kafka-server-stop.sh
+
+Restart=on-failure
+RestartSec=5s
+LimitNOFILE=100000
+
+[Install]
+WantedBy=multi-user.target

@@ -1,0 +1,117 @@
+---
+# 0. Include prerequisites
+- name: Install prerequisites
+  ansible.builtin.include_tasks: prereqs.yml
+
+# 1. Create Zookeeper group
+- name: Create Zookeeper group
+  ansible.builtin.group:
+    name: "{{ zookeeper_group }}"
+    state: present
+  become: true
+
+# 2. Create Zookeeper user
+- name: Create Zookeeper user
+  ansible.builtin.user:
+    name: "{{ zookeeper_user }}"
+    group: "{{ zookeeper_group }}"
+    create_home: false
+    shell: /usr/sbin/nologin
+  become: true
+
+# 3. Create directories
+- name: Create Zookeeper install and data directories
+  ansible.builtin.file:
+    path: "{{ item }}"
+    state: directory
+    owner: "{{ zookeeper_user }}"
+    group: "{{ zookeeper_group }}"
+    mode: '0755'
+  loop:
+    - "{{ zookeeper_install_dir }}"
+    - "{{ zookeeper_data_dir }}/data"
+    - "{{ zookeeper_data_dir }}/log"
+    - "{{ zookeeper_install_dir }}/logs"
+    - "/var/run/zookeeper"
+  become: true
+
+# 4. Download Zookeeper tarball
+- name: Download Zookeeper tarball
+  ansible.builtin.get_url:
+    url: "{{ zookeeper_tarball_url }}"
+    dest: "{{ zookeeper_install_dir }}/apache-zookeeper-{{ zookeeper_version }}-bin.tar.gz"
+    mode: '0644'
+  become: true
+
+# 5. Extract Zookeeper
+- name: Extract Zookeeper
+  ansible.builtin.unarchive:
+    src: "{{ zookeeper_install_dir }}/apache-zookeeper-{{ zookeeper_version }}-bin.tar.gz"
+    dest: "{{ zookeeper_install_dir }}/"
+    remote_src: true
+    creates: "{{ zookeeper_install_dir }}/apache-zookeeper-{{ zookeeper_version }}-bin"
+  become: true
+
+# 6. Fix ownership recursively
+- name: Fix ownership for Zookeeper directories
+  ansible.builtin.file:
+    path: "{{ item }}"
+    owner: "{{ zookeeper_user }}"
+    group: "{{ zookeeper_group }}"
+    recurse: true
+  loop:
+    - "{{ zookeeper_install_dir }}"
+    - "{{ zookeeper_data_dir }}/data"
+    - "{{ zookeeper_data_dir }}/log"
+    - "{{ zookeeper_install_dir }}/logs"
+    - "/var/run/zookeeper"
+  become: true
+
+# 7. Set Zookeeper node ID
+- name: Set Zookeeper node ID
+  ansible.builtin.set_fact:
+    zookeeper_id: "{{ play_hosts.index(inventory_hostname) + 1 }}"
+
+# 8. Configure myid via template
+- name: Write myid file
+  ansible.builtin.template:
+    src: myid.j2
+    dest: "{{ zookeeper_data_dir }}/data/myid"
+    mode: '0644'
+    owner: "{{ zookeeper_user }}"
+    group: "{{ zookeeper_group }}"
+  become: true
+
+# 9. Configure zoo.cfg
+- name: Configure zoo.cfg
+  ansible.builtin.template:
+    src: zoo.cfg.j2
+    dest: "{{ zookeeper_install_dir }}/apache-zookeeper-{{ zookeeper_version }}-bin/conf/zoo.cfg"
+    mode: '0644'
+    owner: "{{ zookeeper_user }}"
+    group: "{{ zookeeper_group }}"
+  become: true
+  notify: Restart Zookeeper
+
+# 10. Create systemd service
+- name: Create systemd service for Zookeeper
+  ansible.builtin.template:
+    src: zookeeper.service.j2
+    dest: /etc/systemd/system/zookeeper.service
+    mode: '0644'
+  become: true
+  notify: Reload Systemd
+
+# 11. Reload systemd daemon
+- name: Reload systemd daemon
+  ansible.builtin.systemd:
+    daemon_reload: true
+  become: true
+
+# 12. Enable and start Zookeeper service
+- name: Enable and start Zookeeper service
+  ansible.builtin.systemd:
+    name: zookeeper
+    enabled: true
+    state: started
+  become: true

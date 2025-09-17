@@ -1,0 +1,27 @@
+---
+- name: Test Zookeeper role on dynamic hosts
+  hosts: localhost
+  gather_facts: false
+  tasks:
+    - name: Add Zookeeper nodes dynamically
+      ansible.builtin.add_host:
+        name: "{{ item }}"
+        groups: zookeeper_nodes
+      loop:
+        - zk_1
+        - zk_2
+        - zk_3
+
+    - name: Debug Zookeeper nodes
+      ansible.builtin.debug:
+        msg: "Zookeeper node {{ item }} added"
+      loop:
+        - zk_1
+        - zk_2
+        - zk_3
+
+- name: Apply Zookeeper role on test hosts
+  hosts: zookeeper_nodes
+  gather_facts: false
+  roles:
+    - role: zookeeper

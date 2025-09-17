@@ -1,0 +1,27 @@
+---
+- name: Test Kafka role on dynamic hosts
+  hosts: localhost
+  gather_facts: false
+  tasks:
+    - name: Add Kafka nodes dynamically
+      ansible.builtin.add_host:
+        name: "{{ item }}"
+        groups: kafka_nodes
+      loop:
+        - kafka_n1
+        - kafka_n2
+        - kafka_n3
+
+    - name: Debug Kafka nodes
+      ansible.builtin.debug:
+        msg: "Kafka node {{ item }} added"
+      loop:
+        - kafka_n1
+        - kafka_n2
+        - kafka_n3
+
+- name: Apply Kafka role on test hosts
+  hosts: kafka_nodes
+  gather_facts: false
+  roles:
+    - role: kafka

@@ -1,0 +1,96 @@
+---
+- name: Create Kafka group
+  ansible.builtin.group:
+    name: "{{ kafka_group }}"
+    state: present
+
+- name: Create Kafka user
+  ansible.builtin.user:
+    name: "{{ kafka_user }}"
+    group: "{{ kafka_group }}"
+    create_home: false
+    shell: /bin/false
+
+- name: Create Kafka install directory
+  ansible.builtin.file:
+    path: "{{ kafka_install_dir }}"
+    state: directory
+    owner: "{{ kafka_user }}"
+    group: "{{ kafka_group }}"
+    mode: '0755'
+  become: true
+
+- name: Download Kafka tarball
+  ansible.builtin.get_url:
+    url: "{{ kafka_download_url }}"
+    dest: "{{ kafka_install_dir }}/{{ kafka_package }}.tgz"
+    mode: '0644'
+  become: true
+
+- name: Extract Kafka
+  ansible.builtin.unarchive:
+    src: "{{ kafka_install_dir }}/{{ kafka_package }}.tgz"
+    dest: "{{ kafka_install_dir }}/"
+    remote_src: true
+    creates: "{{ kafka_install_dir }}/{{ kafka_package }}"
+    owner: "{{ kafka_user }}"
+    group: "{{ kafka_group }}"
+  become: true
+
+- name: Create Kafka data and PID directories
+  ansible.builtin.file:
+    path: "{{ item }}"
+    state: directory
+    owner: "{{ kafka_user }}"
+    group: "{{ kafka_group }}"
+    mode: '0755'
+  loop:
+    - "{{ kafka_data_dir }}"
+    - "{{ kafka_data_dir }}/logs"
+    - "{{ kafka_pid_dir }}"
+  become: true
+
+- name: Ensure Kafka directories ownership
+  ansible.builtin.file:
+    path: "{{ item }}"
+    owner: "{{ kafka_user }}"
+    group: "{{ kafka_group }}"
+    recurse: true
+  loop:
+    - "{{ kafka_install_dir }}/{{ kafka_package }}"
+    - "{{ kafka_data_dir }}"
+    - "{{ kafka_pid_dir }}"
+  become: true
+
+- name: Set Kafka broker ID
+  ansible.builtin.set_fact:
+    kafka_broker_id: "{{ play_hosts.index(inventory_hostname) + 1 }}"
+
+- name: Configure Kafka server.properties
+  ansible.builtin.template:
+    src: server.properties.j2
+    dest: "{{ kafka_install_dir }}/{{ kafka_package }}/config/server.properties"
+    mode: '0644'
+    owner: "{{ kafka_user }}"
+    group: "{{ kafka_group }}"
+  become: true
+  notify: Restart Kafka
+
+- name: Create Kafka systemd service
+  ansible.builtin.template:
+    src: kafka.service.j2
+    dest: /etc/systemd/system/kafka.service
+    mode: '0644'
+  become: true
+
+- name: Reload systemd daemon
+  ansible.builtin.systemd:
+    daemon_reload: true
+  become: true
+
+- name: Enable and start Kafka service
+  ansible.builtin.systemd:
+    name: kafka
+    enabled: true
+    state: started
+  become: true
