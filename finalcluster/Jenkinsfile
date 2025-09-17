@@ -13,10 +13,17 @@ pipeline {
     }
 
     stages {
+        stage('Init Library') {
+            steps {
+                script {
+                    kafka = new org.cloudninja.kafka.template.KafkaDeployment(this)
+                }
+            }
+        }
+
         stage('Checkout Code') {
             steps {
                 script {
-                    def kafka = new org.cloudninja.kafka.template.KafkaDeployment(this)
                     kafka.checkoutCode(GIT_REPO, GIT_BRANCH)
                 }
             }
@@ -25,7 +32,6 @@ pipeline {
         stage('Ansible Lint') {
             steps {
                 script {
-                    def kafka = new org.cloudninja.kafka.template.KafkaDeployment(this)
                     kafka.ansibleLint(PLAYBOOK)
                 }
             }
@@ -34,7 +40,6 @@ pipeline {
         stage('Ansible Syntax Check') {
             steps {
                 script {
-                    def kafka = new org.cloudninja.kafka.template.KafkaDeployment(this)
                     kafka.ansibleSyntaxCheck(INVENTORY, PLAYBOOK)
                 }
             }
@@ -43,7 +48,6 @@ pipeline {
         stage('Ansible Dry Run') {
             steps {
                 script {
-                    def kafka = new org.cloudninja.kafka.template.KafkaDeployment(this)
                     kafka.ansibleDryRun(INVENTORY, PLAYBOOK, ANSIBLE_USER, ANSIBLE_KEY)
                 }
             }
@@ -52,7 +56,6 @@ pipeline {
         stage('Deploy Zookeeper') {
             steps {
                 script {
-                    def kafka = new org.cloudninja.kafka.template.KafkaDeployment(this)
                     kafka.deployZookeeper(INVENTORY, PLAYBOOK, ANSIBLE_USER, ANSIBLE_KEY)
                 }
             }
@@ -61,7 +64,6 @@ pipeline {
         stage('Deploy Kafka') {
             steps {
                 script {
-                    def kafka = new org.cloudninja.kafka.template.KafkaDeployment(this)
                     kafka.deployKafka(INVENTORY, PLAYBOOK, ANSIBLE_USER, ANSIBLE_KEY)
                 }
             }
