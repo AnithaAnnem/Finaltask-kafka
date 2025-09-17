@@ -10,8 +10,7 @@ PIDFile={{ kafka_pid_dir }}/kafka.pid
 
 Environment="JAVA_HOME={{ kafka_java_home }}"
 
-ExecStart={{ kafka_install_dir }}/{{ kafka_package }}/bin/kafka-server-start.sh {{ kafka_install_dir }}/{{ kafka_package }}/config/server.properties
-ExecStop={{ kafka_install_dir }}/{{ kafka_package }}/bin/kafka-server-stop.sh
+ExecStart={{ kafka_install_dir }}/kafka-{{ kafka_version }}/bin/kafka-server-start.sh {{ kafka_install_dir }}/kafka-{{ kafka_version }}/config/server.properties
 
 Restart=on-failure
 RestartSec=5s
