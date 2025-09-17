@@ -6,8 +6,14 @@ After=network.target
 Type=simple
 User={{ zookeeper_user }}
 Group={{ zookeeper_group }}
+Environment="JAVA_HOME={{ java_home }}"
 ExecStart={{ zookeeper_install_dir }}/apache-zookeeper-{{ zookeeper_version }}-bin/bin/zkServer.sh start-foreground
 Restart=on-failure
 
 [Install]
 WantedBy=multi-user.target
+
+
+
+
+
