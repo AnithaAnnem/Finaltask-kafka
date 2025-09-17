@@ -1,3 +1,5 @@
+@Library('KafkaSharedLib') _  // Link your shared library
+
 pipeline {
     agent any
 
@@ -11,73 +13,30 @@ pipeline {
     }
 
     stages {
-
-        stage('Checkout Code') {
+        stage('Pipeline') {
             steps {
-                echo "Checking out Git repository..."
-                checkout([$class: 'GitSCM',
-                          branches: [[name: "*/${GIT_BRANCH}"]],
-                          userRemoteConfigs: [[url: "${GIT_REPO}"]]
-                ])
-            }
-        }
+                script {
+                    def kafka = new org.cloudninja.kafka.template.KafkaDeployment(steps)
 
-        // ===== Ansible CI Checks =====
-        stage('Ansible Lint') {
-            steps {
-                echo "Running ansible-lint on playbooks..."
-                sh '''
-                export ANSIBLE_HOST_KEY_CHECKING=False
-                ansible-lint ${PLAYBOOK}
-                '''
-            }
-        }
+                    // ===== Git Checkout =====
+                    kafka.checkoutCode(GIT_REPO, GIT_BRANCH)
 
-        stage('Ansible Syntax Check') {
-            steps {
-                echo "Checking playbook syntax..."
-                sh '''
-                export ANSIBLE_HOST_KEY_CHECKING=False
-                ansible-playbook -i ${INVENTORY} ${PLAYBOOK} --syntax-check
-                '''
-            }
-        }
+                    // ===== Ansible CI Checks =====
+                    kafka.ansibleLint(PLAYBOOK)
+                    kafka.ansibleSyntaxCheck(INVENTORY, PLAYBOOK)
+                    kafka.ansibleDryRun(INVENTORY, PLAYBOOK, ANSIBLE_USER, ANSIBLE_KEY)
 
-        stage('Ansible Dry Run (Check Mode)') {
-            steps {
-                echo "Performing dry run of playbooks..."
-                sh '''
-                export ANSIBLE_HOST_KEY_CHECKING=False
-                ansible-playbook -i ${INVENTORY} ${PLAYBOOK} --check -u ${ANSIBLE_USER} --private-key ${ANSIBLE_KEY}
-                '''
-            }
-        }
-
-        // ===== Deployment Stages =====
-        stage('Deploy Zookeeper') {
-            steps {
-                echo "Deploying Zookeeper cluster..."
-                sh '''
-                export ANSIBLE_HOST_KEY_CHECKING=False
-                ansible-playbook -i ${INVENTORY} ${PLAYBOOK} -u ${ANSIBLE_USER} --private-key ${ANSIBLE_KEY} --tags zookeeper
-                '''
-            }
-        }
-
-        stage('Deploy Kafka') {
-            steps {
-                echo "Deploying Kafka cluster..."
-                sh '''
-                export ANSIBLE_HOST_KEY_CHECKING=False
-                ansible-playbook -i ${INVENTORY} ${PLAYBOOK} -u ${ANSIBLE_USER} --private-key ${ANSIBLE_KEY} --tags kafka
-                '''
+                    // ===== Deploy =====
+                    kafka.deployZookeeper(INVENTORY, PLAYBOOK, ANSIBLE_USER, ANSIBLE_KEY)
+                    kafka.deployKafka(INVENTORY, PLAYBOOK, ANSIBLE_USER, ANSIBLE_KEY)
+                }
             }
         }
     }
 
     post {
         success {
-            echo "Ansible CI checks and Kafka/Zookeeper deployment completed successfully!"
+            echo "Kafka/Zookeeper deployment completed successfully!"
         }
         failure {
             echo "Pipeline failed. Check logs for details."
