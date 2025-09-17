@@ -3,13 +3,14 @@
 pipeline {
     agent any
 
-    environment {
-        ANSIBLE_KEY   = '/var/lib/jenkins/.ssh/MYKAFKA.pem'
-        ANSIBLE_USER  = 'ubuntu'
-        INVENTORY     = 'finalcluster/aws_ec2.yml'
-        PLAYBOOK      = 'finalcluster/site.yml'
-        GIT_REPO      = 'https://github.com/AnithaAnnem/Finaltask-kafka.git'
-        GIT_BRANCH    = 'main'
+    parameters {
+        string(name: 'GIT_REPO', defaultValue: 'https://github.com/AnithaAnnem/Finaltask-kafka.git', description: 'Git repository URL')
+        string(name: 'GIT_BRANCH', defaultValue: 'main', description: 'Git branch to checkout')
+        string(name: 'INVENTORY', defaultValue: 'finalcluster/aws_ec2.yml', description: 'Ansible inventory file')
+        string(name: 'PLAYBOOK', defaultValue: 'finalcluster/site.yml', description: 'Ansible playbook')
+        string(name: 'ANSIBLE_USER', defaultValue: 'ubuntu', description: 'SSH user for Ansible')
+        string(name: 'ANSIBLE_KEY', defaultValue: '/var/lib/jenkins/.ssh/MYKAFKA.pem', description: 'SSH private key path for Ansible')
+        choice(name: 'DEPLOY_TAG', choices: ['all', 'zookeeper', 'kafka'], description: 'Deploy specific components by tag')
     }
 
     stages {
@@ -24,7 +25,7 @@ pipeline {
         stage('Checkout Code') {
             steps {
                 script {
-                    kafka.checkoutCode(GIT_REPO, GIT_BRANCH)
+                    kafka.checkoutCode(params.GIT_REPO, params.GIT_BRANCH)
                 }
             }
         }
@@ -32,7 +33,7 @@ pipeline {
         stage('Ansible Lint') {
             steps {
                 script {
-                    kafka.ansibleLint(PLAYBOOK)
+                    kafka.ansibleLint(params.PLAYBOOK)
                 }
             }
         }
@@ -40,7 +41,7 @@ pipeline {
         stage('Ansible Syntax Check') {
             steps {
                 script {
-                    kafka.ansibleSyntaxCheck(INVENTORY, PLAYBOOK)
+                    kafka.ansibleSyntaxCheck(params.INVENTORY, params.PLAYBOOK)
                 }
             }
         }
@@ -48,23 +49,23 @@ pipeline {
         stage('Ansible Dry Run') {
             steps {
                 script {
-                    kafka.ansibleDryRun(INVENTORY, PLAYBOOK, ANSIBLE_USER, ANSIBLE_KEY)
+                    kafka.ansibleDryRun(params.INVENTORY, params.PLAYBOOK, params.ANSIBLE_USER, params.ANSIBLE_KEY)
                 }
             }
         }
 
-        stage('Deploy Zookeeper') {
+        stage('Deploy Components') {
             steps {
                 script {
-                    kafka.deployZookeeper(INVENTORY, PLAYBOOK, ANSIBLE_USER, ANSIBLE_KEY)
-                }
-            }
-        }
-
-        stage('Deploy Kafka') {
-            steps {
-                script {
-                    kafka.deployKafka(INVENTORY, PLAYBOOK, ANSIBLE_USER, ANSIBLE_KEY)
+                    if (params.DEPLOY_TAG == 'zookeeper') {
+                        kafka.deployZookeeper(params.INVENTORY, params.PLAYBOOK, params.ANSIBLE_USER, params.ANSIBLE_KEY)
+                    } else if (params.DEPLOY_TAG == 'kafka') {
+                        kafka.deployKafka(params.INVENTORY, params.PLAYBOOK, params.ANSIBLE_USER, params.ANSIBLE_KEY)
+                    } else {
+                        // Deploy both
+                        kafka.deployZookeeper(params.INVENTORY, params.PLAYBOOK, params.ANSIBLE_USER, params.ANSIBLE_KEY)
+                        kafka.deployKafka(params.INVENTORY, params.PLAYBOOK, params.ANSIBLE_USER, params.ANSIBLE_KEY)
+                    }
                 }
             }
         }
