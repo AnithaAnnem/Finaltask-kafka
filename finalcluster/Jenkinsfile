@@ -72,13 +72,13 @@ pipeline {
 
     post {
         success {
-            echo "✅ Kafka/Zookeeper deployment completed successfully!"
+            echo " Kafka/Zookeeper deployment completed successfully!"
         }
         failure {
-            echo "❌ Pipeline failed. Check logs for details."
+            echo " Pipeline failed. Check logs for details."
         }
         always {
-            echo "🧹 Cleaning workspace..."
+            echo " Cleaning workspace..."
             cleanWs()
         }
     }
