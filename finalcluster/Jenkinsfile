@@ -1,9 +1,8 @@
-@Library('KafkaSharedLib') _  // Link to your shared library
+@Library('KafkaSharedLib') _  
 
 pipeline {
     agent any
 
-    // Only environment parameters — fully configurable
     parameters {
         string(name: 'GIT_REPO', defaultValue: 'https://github.com/AnithaAnnem/Finaltask-kafka.git', description: 'Git repository URL')
         string(name: 'GIT_BRANCH', defaultValue: 'main', description: 'Git branch to checkout')
