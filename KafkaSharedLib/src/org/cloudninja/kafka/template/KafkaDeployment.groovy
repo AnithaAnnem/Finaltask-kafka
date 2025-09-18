@@ -17,7 +17,7 @@ class KafkaDeployment implements Serializable {
     def credentialScan(String repo) {
         steps.echo "Running credential scan with GitLeaks..."
         steps.sh "git secrets || true"
-        steps.sh "gitleaks detect --source ${repo} --report-path gitleaks-report.json || true"
+        steps.sh "gitleaks detect --source . --report-path gitleaks-report.json || true"
     }
 
     def ansibleLint(String playbook) {
