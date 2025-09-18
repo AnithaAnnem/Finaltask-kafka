@@ -15,33 +15,17 @@ class KafkaDeployment implements Serializable {
     }
 
     def credentialScan(String repo) {
-        steps.echo "Running credential/secret scan..."
-        steps.sh "trufflehog git --json ${repo} || true"
+        steps.echo "Running GitLeaks credential scan..."
+        steps.sh """
+            git clone ${repo} temp_repo
+            gitleaks detect --source temp_repo --report-format json --report-path gitleaks-report.json || true
+            rm -rf temp_repo
+        """
     }
 
     def dependencyScan() {
-        steps.echo "Checking dependencies..."
-        steps.sh "pip install safety && safety check -r requirements.txt || true"
-    }
-
-    def staticCodeAnalysis() {
-        steps.echo "Running static code analysis..."
-        steps.sh "pylint **/*.py || true"
-    }
-
-    def runUnitTests() {
-        steps.echo "Running unit tests..."
-        steps.sh "pytest --maxfail=1 --disable-warnings -q || true"
-    }
-
-    def buildCode() {
-        steps.echo "Compiling/building code..."
-        steps.sh "mvn clean compile || true"
-    }
-
-    def codeCoverage() {
-        steps.echo "Checking code coverage..."
-        steps.sh "coverage run -m pytest && coverage report || true"
+        steps.echo "Checking Ansible role dependencies..."
+        steps.sh "ansible-galaxy install -r ${steps.env.WORKSPACE}/requirements.yml || true"
     }
 
     def ansibleLint(String playbook) {
