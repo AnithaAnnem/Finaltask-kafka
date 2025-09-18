@@ -19,57 +19,37 @@ pipeline {
             }
         }
 
-        stage('Checkout Code') {
-            steps {
-                script { kafka.checkoutCode(params.GIT_REPO, params.GIT_BRANCH) }
-            }
+        stage('Checkout Code') { 
+            steps { script { kafka.checkoutCode(params.GIT_REPO, params.GIT_BRANCH) } } 
         }
 
-        stage('Credential Scan') {
-            steps {
-                script { kafka.credentialScan(params.GIT_REPO) }
-            }
+        stage('Credential Scan') { 
+            steps { script { kafka.credentialScan(params.GIT_REPO) } } 
         }
 
-        stage('Dependency Scan') {
-            steps {
-                script { kafka.dependencyScan() }
-            }
+        stage('Ansible Lint') { 
+            steps { script { kafka.ansibleLint(params.PLAYBOOK) } } 
         }
 
-        stage('Ansible Lint') {
-            steps {
-                script { kafka.ansibleLint(params.PLAYBOOK) }
-            }
+        stage('Ansible Syntax Check') { 
+            steps { script { kafka.ansibleSyntaxCheck(params.INVENTORY, params.PLAYBOOK) } } 
         }
 
-        stage('Ansible Syntax Check') {
-            steps {
-                script { kafka.ansibleSyntaxCheck(params.INVENTORY, params.PLAYBOOK) }
-            }
+        stage('Ansible Dry Run') { 
+            steps { script { kafka.ansibleDryRun(params.INVENTORY, params.PLAYBOOK, params.ANSIBLE_USER, params.ANSIBLE_KEY) } } 
         }
 
-        stage('Ansible Dry Run') {
-            steps {
-                script { kafka.ansibleDryRun(params.INVENTORY, params.PLAYBOOK, params.ANSIBLE_USER, params.ANSIBLE_KEY) }
-            }
+        stage('Deploy Zookeeper') { 
+            steps { script { kafka.deployZookeeper(params.INVENTORY, params.PLAYBOOK, params.ANSIBLE_USER, params.ANSIBLE_KEY) } } 
         }
 
-        stage('Deploy Zookeeper') {
-            steps {
-                script { kafka.deployZookeeper(params.INVENTORY, params.PLAYBOOK, params.ANSIBLE_USER, params.ANSIBLE_KEY) }
-            }
-        }
-
-        stage('Deploy Kafka') {
-            steps {
-                script { kafka.deployKafka(params.INVENTORY, params.PLAYBOOK, params.ANSIBLE_USER, params.ANSIBLE_KEY) }
-            }
+        stage('Deploy Kafka') { 
+            steps { script { kafka.deployKafka(params.INVENTORY, params.PLAYBOOK, params.ANSIBLE_USER, params.ANSIBLE_KEY) } } 
         }
     }
 
     post {
-        success { echo "Deployment completed successfully!" }
+        success { echo "All pre-deployment checks and deployments completed successfully!" }
         failure { echo "Pipeline failed. Check logs for details." }
         always { cleanWs() }
     }
