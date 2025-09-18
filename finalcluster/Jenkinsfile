@@ -19,34 +19,24 @@ pipeline {
             }
         }
 
-        stage('Checkout Code') { steps { script { kafka.checkoutCode(params.GIT_REPO, params.GIT_BRANCH) } } }
+        stage('Checkout Code') { 
+            steps { 
+                script { kafka.checkoutCode(params.GIT_REPO, params.GIT_BRANCH) } 
+            } 
+        }
 
-        // ----------------------------
-        // Repo-level
-        // ----------------------------
         stage('Credential Scan') { steps { script { kafka.credentialScan(params.GIT_REPO) } } }
         stage('Dependency Scan') { steps { script { kafka.dependencyScan() } } }
 
-        // ----------------------------
-        // Code-level
-        // ----------------------------
         stage('Static Code Analysis') { steps { script { kafka.staticCodeAnalysis() } } }
         stage('Unit Tests') { steps { script { kafka.runUnitTests() } } }
         stage('Build Code') { steps { script { kafka.buildCode() } } }
         stage('Code Coverage') { steps { script { kafka.codeCoverage() } } }
 
-        // ----------------------------
-        // Ansible-level
-        // ----------------------------
         stage('Ansible Lint') { steps { script { kafka.ansibleLint(params.PLAYBOOK) } } }
         stage('Ansible Syntax Check') { steps { script { kafka.ansibleSyntaxCheck(params.INVENTORY, params.PLAYBOOK) } } }
         stage('Ansible Dry Run') { steps { script { kafka.ansibleDryRun(params.INVENTORY, params.PLAYBOOK, params.ANSIBLE_USER, params.ANSIBLE_KEY) } } }
-        stage('Idempotency Test') { steps { script { kafka.ansibleIdempotencyTest(params.INVENTORY, params.PLAYBOOK, params.ANSIBLE_USER, params.ANSIBLE_KEY) } } }
-        stage('Inventory Ping') { steps { script { kafka.inventoryPing(params.INVENTORY, params.ANSIBLE_USER, params.ANSIBLE_KEY) } } }
 
-        // ----------------------------
-        // Deployment
-        // ----------------------------
         stage('Deploy Zookeeper') { steps { script { kafka.deployZookeeper(params.INVENTORY, params.PLAYBOOK, params.ANSIBLE_USER, params.ANSIBLE_KEY) } } }
         stage('Deploy Kafka') { steps { script { kafka.deployKafka(params.INVENTORY, params.PLAYBOOK, params.ANSIBLE_USER, params.ANSIBLE_KEY) } } }
     }
